@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friendzy - Join the Fun!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Quicksand', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #CFBCFF 0%, #E3D9FF 99%, #E3D9FF 100%);
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; position: relative;
+        }
+
+        /* --- DESKTOP ICONS (Consistent with start page) --- */
+        .desktop-icons { 
+            position: absolute; top: 15px; left: 15px; 
+            display: flex; flex-direction: column; gap: 15px; z-index: 0;
+        }
+        .icon-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; transition: transform 0.2s; }
+        .icon-box { width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .icon-photos { background: linear-gradient(to bottom, #FFF9E3, #FFF3B0); }
+        .icon-chrome { background: linear-gradient(to bottom, #A2D2FF, #BDE0FE); }
+        .icon-friendzy { background: linear-gradient(to bottom, #A2D2FF, #FFF3B0); border: 2px solid white; visibility: hidden; }
+        #friendzyLabel { opacity: 0; transition: opacity 0.5s ease; }
+        .icon-label { color: white; font-size: 10px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+        /* --- ANIMATIONS --- */
+        @keyframes iconPop {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes windowOpen {
+            0% { transform: scale(0.9) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        @keyframes btnGlowPulse {
+            0% { box-shadow: 0 0 0px rgba(0, 102, 255, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 20px rgba(0, 102, 255, 0.7); transform: scale(1.02); }
+            100% { box-shadow: 0 0 0px rgba(0, 102, 255, 0.4); transform: scale(1); }
+        }
+        
+        .pop-animation { animation: iconPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; visibility: visible !important; }
+
+        /* --- WINDOW STYLES (Resized to fit) --- */
+        .game-window {
+            width: 800px; height: 460px; /* Scaled down from 960x540 */
+            background-color: white; border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            display: flex; flex-direction: column; overflow: hidden; z-index: 1;
+            animation: windowOpen 0.6s ease-out 0.2s forwards;
+            opacity: 0; 
+        }
+
+        .window-header { height: 35px; background: linear-gradient(to right, #A2D2FF, #FFF3B0); display: flex; align-items: center; padding: 0 12px; justify-content: space-between; }
+        .window-controls { display: flex; gap: 6px; }
+        .control { width: 10px; height: 10px; border-radius: 50%; }
+        .red { background-color: #FF5F56; } .yellow { background-color: #FFBD2E; } .green { background-color: #27C93F; }
+        .window-title { color: #5B9BD5; font-weight: 700; font-size: 12px; letter-spacing: 1px; }
+
+        .form-split { display: flex; height: calc(100% - 35px); }
+        .form-welcome { width: 280px; background-color: #FFF3B0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center; }
+        .form-content { flex: 1; padding: 20px 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        .form-container { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 14px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+        label { font-weight: 700; color: #5B9BD5; font-size: 12px; }
+
+        input[type="text"] { padding: 8px 12px; border: 2px solid #FFF3B0; border-radius: 10px; outline: none; font-size: 13px; width: 100%; transition: border-color 0.3s; }
+        input[type="text"]:read-only { background-color: #fcfcfc; color: #888; border-color: #eee; }
+        
+        #bdayInput { cursor: pointer; }
+        #bdayInput:focus { border-color: #A2D2FF; }
+
+        .agreement-box { background: #f9f9f9; border: 1px solid #eee; padding: 8px; border-radius: 10px; font-size: 9px; color: #999; height: 50px; overflow-y: scroll; margin-top: 2px; }
+
+        /* JOIN BUTTON STYLES */
+        .submit-btn { 
+            background-color: #E1F0FF; color: white; border: none; padding: 12px; 
+            border-radius: 30px; font-weight: 700; font-size: 14px; cursor: not-allowed; 
+            margin-top: 5px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            width: 100%; position: relative;
+        }
+        .submit-btn.ready { 
+            background-color: #74adef; cursor: pointer; animation: btnGlowPulse 2s infinite;
+        }
+        .submit-btn.ready:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .submit-btn.ready:active { transform: scale(0.95); }
+
+        .reveal { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; visibility: visible !important; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        
+        .hobby-pill { visibility: hidden; display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-weight: 700; color: white; font-size: 11px; }
+        .pill-photo { background-color: #A2D2FF; } .pill-music { background-color: #FFB7B2; } .pill-soccer { background-color: #B2E2A2; }
+        .success-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 5; }
+    </style>
+</head>
+<body>
+
+    <audio id="downloadSfx"><source src="download.mp3" type="audio/mpeg"></audio>
+
+    <div class="desktop-icons">
+        <div class="icon-item"><div class="icon-box icon-photos">📷</div><span class="icon-label">Photos</span></div>
+        <div class="icon-item"><div class="icon-box icon-chrome">🌐</div><span class="icon-label">Chrome</span></div>
+        <div class="icon-item" id="appIcon">
+            <div class="icon-box icon-friendzy">✨</div>
+            <span class="icon-label" id="friendzyLabel">Friendzy</span>
+        </div>
+    </div>
+
+    <div class="game-window">
+        <div class="window-header">
+            <div class="window-controls"><div class="control red"></div><div class="control yellow"></div><div class="control green"></div></div>
+            <div class="window-title">✨ Friendzy Setup</div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="form-split">
+            <div class="form-welcome">
+                <div style="font-size: 45px; margin-bottom: 15px;">👋</div>
+                <h2 style="color: #5B9BD5; font-size: 20px;">Hi there!</h2>
+                <p style="font-size: 12px; color: #888; margin-top: 8px; line-height: 1.4;">Set up your profile to start!</p>
+            </div>
+
+            <div class="form-content">
+                <div id="successView" class="success-screen">
+                    <span style="font-size: 40px;">🎉</span>
+                    <h2 style="margin-top: 15px; color: #5B9BD5;">Account Created!</h2>
+                </div>
+
+                <div class="form-container">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="userNameInput" placeholder="Type nickname..." onkeydown="checkEnter(event)">
+                    </div>
+                    <div class="form-group">
+                        <label>Birthday</label>
+                        <input type="text" id="bdayInput" readonly value="DD/MM/YYYY" onfocus="triggerSequence()" onclick="triggerSequence()">
+                    </div>
+                    <div class="form-group">
+                        <label>Hobbies</label>
+                        <div style="display:flex; gap:6px;">
+                            <div class="hobby-pill pill-photo" id="pill1"><input type="checkbox" id="check1"> Photography</div>
+                            <div class="hobby-pill pill-music" id="pill2"><input type="checkbox" id="check2"> Music</div>
+                            <div class="hobby-pill pill-soccer" id="pill3"><input type="checkbox" id="check3"> Soccer</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>User Agreement</label>
+                        <div class="agreement-box">By clicking "Join Friendzy!", you agree to our Terms of Service. Friendzy may access your microphone, camera, and local files to enhance your social experience. Personal data may be shared with our "Bestie Algorithm" for optimization. Friendzy is not responsible for any unexpected AI behavior.</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+                        <input type="checkbox" id="strangerChat">
+                        <label style="font-weight:400; font-size:10px; color:#888;">Allow chat requests from strangers</label>
+                    </div>
+                    <button type="button" class="submit-btn" id="submitBtn" onclick="completeSignup()">Join Friendzy! ✨</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const hobbyPopSound = new Audio('hobbiespop.mp3');
+        const typingSound = new Audio('typing.mp3');
+        const clickSound = new Audio('click.mp3');
+        const downloadSound = document.getElementById('downloadSfx');
+
+        window.onload = () => {
+            // Icon pop and label fade
+            setTimeout(() => {
+                document.getElementById('appIcon').querySelector('.icon-friendzy').classList.add('pop-animation');
+                document.getElementById('friendzyLabel').style.opacity = "1";
+                // Play download sound when window is fully "open"
+                downloadSound.play().catch(e => console.log("Audio blocked until interaction"));
+            }, 500);
+        };
+
+        let sequenceStarted = false;
+        let sequenceFinished = false;
+
+        function checkEnter(event) { 
+            if (event.key === "Enter") {
+                triggerSequence();
+            } 
+        }
+
+        async function typeValue(element, text) {
+            element.value = "";
+            element.style.color = "black";
+            typingSound.loop = true;
+            typingSound.play().catch(e => console.log("Audio play blocked"));
+
+            for (let i = 0; i < text.length; i++) {
+                element.value += text[i];
+                await new Promise(r => setTimeout(r, 60));
+            }
+
+            typingSound.pause();
+            typingSound.currentTime = 0;
+        }
+
+        async function triggerSequence() {
+            const nameInput = document.getElementById('userNameInput');
+            const bdayInput = document.getElementById('bdayInput');
+            
+            if (nameInput.value.length < 1 || sequenceStarted) return;
+            
+            sequenceStarted = true;
+            nameInput.readOnly = true;
+            
+            clickSound.play(); 
+            bdayInput.blur(); 
+
+            await new Promise(r => setTimeout(r, 400));
+            await typeValue(bdayInput, "11/04/2007");
+
+            setTimeout(() => { 
+                document.getElementById('pill1').classList.add('reveal'); 
+                document.getElementById('check1').checked = true; 
+                hobbyPopSound.cloneNode().play(); 
+            }, 400);
+
+            setTimeout(() => { 
+                document.getElementById('pill2').classList.add('reveal'); 
+                document.getElementById('check2').checked = true; 
+                hobbyPopSound.cloneNode().play();
+            }, 800);
+
+            setTimeout(() => { 
+                document.getElementById('pill3').classList.add('reveal'); 
+                document.getElementById('check3').checked = true; 
+                hobbyPopSound.cloneNode().play();
+            }, 1200);
+
+            setTimeout(() => { 
+                document.getElementById('strangerChat').checked = true; 
+                clickSound.play();
+            }, 1600);
+
+            setTimeout(() => { 
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.classList.add('ready'); 
+                sequenceFinished = true; 
+            }, 2000);
+        }
+
+        function completeSignup() {
+            if (!sequenceFinished) return;
+            const btn = document.getElementById('submitBtn');
+            btn.style.transform = "scale(0.9)";
+            localStorage.setItem('friendzy_name', document.getElementById('userNameInput').value);
+            setTimeout(() => {
+                document.getElementById('successView').style.display = 'flex';
+                setTimeout(() => { window.location.href = 'friendzyhome.html'; }, 2000);
+            }, 100);
+        }
+    </script>
+</body>
+</html>
