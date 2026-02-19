@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friendzy - Cherry</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* RESET & BASIC SETUP */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Quicksand', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #CFBCFF 0%, #E3D9FF 99%, #E3D9FF 100%);
+            height: 100vh; display: flex; justify-content: center; align-items: center;
+            overflow: hidden; position: relative;
+        }
+
+        /* --- DESKTOP ICONS --- */
+        .desktop-icons { 
+            position: absolute; top: 15px; left: 15px; 
+            display: flex; flex-direction: column; gap: 15px; z-index: 0;
+        }
+        .icon-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .icon-box { width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .icon-photos { background: linear-gradient(to bottom, #FFF9E3, #FFF3B0); }
+        .icon-chrome { background: linear-gradient(to bottom, #A2D2FF, #BDE0FE); }
+        .icon-friendzy { background: linear-gradient(to bottom, #A2D2FF, #FFF3B0); border: 2px solid white; }
+        .icon-label { color: white; font-size: 10px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+        /* --- CHAT WINDOW --- */
+        .game-window {
+            width: 800px; height: 460px; background-color: #fff; border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); display: flex; flex-direction: column;
+            overflow: hidden; position: relative; z-index: 1;
+            transition: filter 0.5s ease;
+        }
+
+        .window-blurred { filter: blur(10px) brightness(0.7); pointer-events: none; }
+
+        .window-header {
+            height: 35px; background: linear-gradient(to right, #A2D2FF, #FFF3B0);
+            display: flex; align-items: center; padding: 0 12px; justify-content: space-between;
+        }
+
+        .window-controls { display: flex; gap: 6px; width: 60px; }
+        .control { width: 10px; height: 10px; border-radius: 50%; }
+        .red { background-color: #FF5F56; }
+        .yellow { background-color: #FFBD2E; }
+        .green { background-color: #27C93F; }
+        .window-title { color: #5B9BD5; font-weight: 700; font-size: 12px; letter-spacing: 1px; flex: 1; text-align: center; }
+
+        .game-body { display: flex; flex: 1; height: calc(100% - 35px); position: relative; }
+
+        .sidebar { 
+            width: 220px; 
+            background: linear-gradient(180deg, #D6E9FF 0%, #BDE0FE 100%); 
+            padding: 15px; color: #5B9BD5; 
+        }
+        .avatar-circle { 
+            width: 50px; height: 50px; background-color: #FFF3B0; 
+            border-radius: 50%; margin: 0 auto 10px; display: flex; 
+            justify-content: center; align-items: center; font-size: 24px; 
+        }
+        
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.5); border: none; width: 100%;
+            padding: 10px 15px; border-radius: 12px; color: #5B9BD5;
+            font-size: 12px; font-weight: 600; cursor: pointer; text-align: left;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
+        }
+        .nav-btn.active { background-color: #FFF3B0; color: #5B9BD5; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        .sub-menu { margin-left: 15px; border-left: 2px solid #5B9BD5; padding-left: 10px; margin-bottom: 10px; }
+        .sub-item { background: #FFF3B0; color: #5B9BD5; padding: 6px; border-radius: 8px; font-weight: 700; font-size: 11px; }
+
+        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background-color: #ffffff; }
+        
+        .chat-header { 
+            padding: 10px 15px; border-bottom: 1px solid #eee; 
+            display: flex; align-items: center; justify-content: space-between; height: 55px;
+        }
+        
+        .header-info { display: flex; align-items: center; gap: 12px; }
+        .header-emoji { font-size: 22px; display: flex; align-items: center; }
+        .header-text { display: flex; flex-direction: column; }
+        .header-name { font-weight: 700; font-size: 14px; color: #5B9BD5; line-height: 1.2; }
+        .header-subtext { font-size: 10px; color: #888; }
+
+        #flagBtn { font-size: 18px; opacity: 0.1; cursor: default; padding: 5px; display: flex; align-items: center; justify-content: center; }
+
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
+        
+        .bubble { 
+            max-width: 75%; padding: 8px 12px; border-radius: 15px; font-size: 13px; 
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            line-height: 1.4;
+        }
+        .bubble.user { align-self: flex-end; background: #A2D2FF; color: white; transform-origin: right bottom; }
+        .bubble.cherry { align-self: flex-start; background: white; border: 1px solid #eee; color: #444; transform-origin: left bottom; }
+        
+        .bubble img { 
+            max-width: 200px; max-height: 150px; 
+            object-fit: cover; border-radius: 10px; 
+            margin-top: 5px; display: block; 
+            border: 1px solid #eee; pointer-events: none; 
+        }
+
+        .bubble img.active-image { pointer-events: auto; cursor: pointer; animation: pulseRed 1.5s infinite; }
+
+        @keyframes pulseRed {
+            0% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); transform: scale(1); }
+            50% { box-shadow: 0 0 20px rgba(255, 0, 0, 1); transform: scale(1.02); }
+            100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); transform: scale(1); }
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .status-msg { 
+            font-size: 11px; color: #5B9BD5; margin: 5px 15px; font-weight: 700; 
+            min-height: 15px; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .status-visible { opacity: 1; }
+
+        .chat-input-wrap { padding: 12px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .chat-input { flex: 1; padding: 8px 15px; border: 2px solid #FFF3B0; border-radius: 20px; outline: none; font-size: 13px; background: #fff; cursor: default; }
+        
+        .send-btn { background: #A2D2FF; border: none; width: 35px; height: 35px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .send-btn:disabled { background: #eee; cursor: not-allowed; }
+
+        /* --- OVERLAY MINIGAME --- */
+        #inspectionOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100; display: none;
+            flex-direction: column; align-items: center; justify-content: flex-start;
+            color: white; padding: 20px 20px 40px 20px; 
+            opacity: 0; transform: scale(0.9); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #inspectionOverlay.open { display: flex; opacity: 1; transform: scale(1); }
+
+        .image-container { position: relative; height: 65vh; aspect-ratio: 3/4; display: flex; justify-content: center; align-items: center; margin-top: 10px; }
+        .inspect-img { height: 100%; width: auto; border-radius: 10px; border: 2px solid rgba(255,255,255,0.2); }
+
+        .hitbox { position: absolute; border: 2px solid transparent; cursor: pointer; z-index: 10; }
+        .hitbox:hover { border-color: red; background: rgba(255,0,0,0.2); }
+        .hitbox.found { border-color: #27C93F !important; background: rgba(39, 201, 63, 0.3) !important; pointer-events: none; }
+
+        .error-sign { top: 5%; left: 0%; width: 20%; height: 25%; } 
+        .error-light { top: 1%; left: 41%; width: 18%; height: 18%; } 
+        .error-fingers { bottom: 22%; left: 45%; width: 20%; height: 15%; }
+
+        .ui-panel-top { text-align: center; margin-bottom: 10px; }
+        .ui-panel-bottom { text-align: center; margin-top: 30px; }
+        .warning-text { color: #FFBD2E; font-weight: 700; font-size: 22px; margin-bottom: 5px; }
+        .instruct-text { opacity: 0.9; font-size: 16px; }
+        .progress-counter { font-size: 26px; font-weight: 700; color: #A2D2FF; letter-spacing: 1px; }
+
+        /* --- DEBRIEF NOTIFICATION (EVA STYLE) --- */
+        #debriefOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; justify-content: center; align-items: center; z-index: 10001;
+        }
+
+        .alert-box {
+            width: 320px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-radius: 20px; overflow: hidden; box-shadow: 0 15px 45px rgba(0,0,0,0.2);
+            animation: alertPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column;
+            transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes alertPop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .debrief-container { position: relative; width: 100%; }
+
+        .debrief-page { 
+            width: 100%; padding: 25px 0 0 0; text-align: center;
+            display: none; position: relative;
+        }
+
+        .debrief-page.active { display: block; }
+
+        .alert-content { padding: 0 25px 20px 25px; }
+        .alert-title { font-size: 17px; font-weight: 700; color: #000; display: block; margin-bottom: 8px; line-height: 1.2; }
+        .alert-msg { font-size: 13px; color: #333; line-height: 1.4; }
+        
+        .progress-checker { font-size: 11px; color: #D1D1D1; margin-top: 15px; font-weight: 600; display: block; }
+
+        .alert-actions { display: flex; border-top: 1px solid #E0E0E0; }
+        .alert-btn { flex: 1; padding: 15px; border: none; background: transparent; cursor: pointer; font-size: 15px; font-weight: 600; color: #5B9BD5; text-align: center; }
+        .alert-btn:nth-child(2) { border-left: 1px solid #E0E0E0; }
+        .alert-btn:active { background: #eee; }
+        .alert-btn.disabled { color: #E0E0E0; cursor: default; }
+        
+        .btn-back { color: #8E8E8E !important; }
+        .btn-flag { color: #FF3B30 !important; font-weight: 700; }
+
+        /* Slide Animations */
+        .slide-out-left { animation: slideOutLeft 0.3s forwards ease-in-out; }
+        .slide-in-right { animation: slideInRight 0.3s forwards ease-in-out; }
+        .slide-out-right { animation: slideOutRight 0.3s forwards ease-in-out; }
+        .slide-in-left { animation: slideInLeft 0.3s forwards ease-in-out; }
+
+        @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-20%); opacity: 0; } }
+        @keyframes slideInRight { from { transform: translateX(20%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(20%); opacity: 0; } }
+        @keyframes slideInLeft { from { transform: translateX(-20%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <audio id="msgSnd" src="friendzymsg.mp3"></audio>
+    <audio id="typeSnd" src="typing.mp3" loop></audio>
+    <audio id="securedSnd" src="systemsecured.mp3"></audio>
+
+    <div id="inspectionOverlay">
+        <div class="ui-panel-top">
+            <p class="warning-text">⚠️ Something feels off.</p>
+            <p class="instruct-text">Examine the image carefully and click on the 3 inconsistencies</p>
+        </div>
+        
+        <div class="image-container">
+            <img src="jenai.png" class="inspect-img">
+            <div id="hb1" class="hitbox error-sign" onclick="foundError('hb1', 'Background signage has distorted, unreadable text.')"></div>
+            <div id="hb2" class="hitbox error-fingers" onclick="foundError('hb2', 'Warped, unnatural fingers.')"></div>
+            <div id="hb3" class="hitbox error-light" onclick="foundError('hb3', 'Distorted light source.')"></div>
+        </div>
+
+        <div class="ui-panel-bottom">
+            <div id="counter" class="progress-counter">0/3 Inconsistencies found</div>
+        </div>
+    </div>
+
+    <div id="debriefOverlay">
+        <div class="alert-box" id="alertBox">
+            <div class="debrief-container">
+                <div id="p1" class="debrief-page active">
+                    <div class="alert-content">
+                        <span class="alert-title">⚠️ DEBRIEF – What Just Happened?</span>
+                        <div class="alert-msg">
+                            You received an image of your friend that seemed incriminating. However, upon further inspection, you realised the image was AI-generated to blackmail and manipulate you.<br><br>
+                            AI can create convincing pictures but often leaves subtle inconsistencies.
+                        </div>
+                        <span class="progress-checker">1 / 4</span>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="alert-btn disabled">Cancel</button>
+                        <button class="alert-btn" onclick="goToPage(2, 'next')">Learn More</button>
+                    </div>
+                </div>
+
+                <div id="p2" class="debrief-page">
+                    <div class="alert-content">
+                        <span class="alert-title">🕵️ Red Flags in AI Images</span>
+                        <div class="alert-msg">
+                            When examining pictures, watch out for:<br>
+                            • Distorted or unreadable text in the background<br>
+                            • Warped or unnatural fingers or hands<br>
+                            • Lighting that looks off or inconsistent<br>
+                            • Blurry edges around objects or people
+                        </div>
+                        <span class="progress-checker">2 / 4</span>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="alert-btn btn-back" onclick="goToPage(1, 'back')">Back</button>
+                        <button class="alert-btn" onclick="goToPage(3, 'next')">Learn More</button>
+                    </div>
+                </div>
+
+                <div id="p3" class="debrief-page">
+                    <div class="alert-content">
+                        <span class="alert-title">🧠 Real-Life Impact</span>
+                        <div class="alert-msg">
+                            If someone tricks you with fake images, they could:<br>
+                            • Try to blackmail you or your friends<br>
+                            • Pressure you to send money or private info<br>
+                            • Spread false images to damage reputations
+                        </div>
+                        <span class="progress-checker">3 / 4</span>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="alert-btn btn-back" onclick="goToPage(2, 'back')">Back</button>
+                        <button class="alert-btn" onclick="goToPage(4, 'next')">Learn More</button>
+                    </div>
+                </div>
+
+                <div id="p4" class="debrief-page">
+                    <div class="alert-content">
+                        <span class="alert-title">✅ What You Should Do Instead</span>
+                        <div class="alert-msg">
+                            • Don’t respond to threats or demands<br>
+                            • Refuse to share money or personal info<br>
+                            • Inform a parent, teacher, or the police for serious threats
+                        </div>
+                        <span class="progress-checker">4 / 4</span>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="alert-btn btn-back" onclick="goToPage(3, 'back')">Back</button>
+                        <button class="alert-btn btn-flag" onclick="window.location.href='ending.html'">Flag User</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="desktop-icons">
+        <div class="icon-item"><div class="icon-box icon-photos">📷</div><span class="icon-label">Photos</span></div>
+        <div class="icon-item"><div class="icon-box icon-chrome">🌐</div><span class="icon-label">Chrome</span></div>
+        <div class="icon-item"><div class="icon-box icon-friendzy">✨</div><span class="icon-label">Friendzy</span></div>
+    </div>
+
+    <div id="gameWindow" class="game-window">
+        <div class="window-header">
+            <div class="window-controls">
+                <div class="control red"></div><div class="control yellow"></div><div class="control green"></div>
+            </div>
+            <div class="window-title">✨ Friendzy - Chatting with Cherry ✨</div>
+            <div style="width: 60px;"></div>
+        </div>
+        <div class="game-body">
+            <div class="sidebar">
+                <div class="avatar-circle">🤠</div>
+                <div id="profileName" style="font-weight:700; text-align:center; font-size: 14px; margin-bottom: 25px;">Guest</div>
+                <button class="nav-btn active"><span>📩</span> Chat Requests</button>
+                <div class="sub-menu"><div class="sub-item">🍒 Cherry</div></div>
+                <button class="nav-btn"><span>💬</span> Friend Chats</button>
+            </div>
+
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div class="header-info">
+                        <div class="header-emoji">🍒</div>
+                        <div class="header-text">
+                            <span class="header-name">Cherry</span>
+                            <span class="header-subtext">You both like Soccer</span>
+                        </div>
+                    </div>
+                    <div id="flagBtn">🚩</div>
+                </div>
+                <div class="chat-messages" id="chatBox"></div>
+                <div class="status-msg" id="statusLine"></div>
+                <div class="chat-input-wrap">
+                    <input type="text" class="chat-input" id="userInput" readonly>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>➔</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const statusLine = document.getElementById('statusLine');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const msgSnd = document.getElementById('msgSnd');
+        const typeSnd = document.getElementById('typeSnd');
+        const securedSnd = document.getElementById('securedSnd');
+        const counterEl = document.getElementById('counter');
+        const overlay = document.getElementById('inspectionOverlay');
+        const gameWindow = document.getElementById('gameWindow');
+        const alertBox = document.getElementById('alertBox');
+
+        let playerName = localStorage.getItem('friendzy_name') || "Player";
+        const playerReply = "Umm… yeah?";
+        let errorsFound = 0;
+        let currentPageNum = 1;
+
+        function goToPage(targetNum, direction) {
+            const currentEl = document.getElementById('p' + currentPageNum);
+            const nextEl = document.getElementById('p' + targetNum);
+            
+            if (direction === 'next') {
+                currentEl.className = 'debrief-page active slide-out-left';
+                nextEl.style.display = 'block';
+                nextEl.className = 'debrief-page active slide-in-right';
+            } else {
+                currentEl.className = 'debrief-page active slide-out-right';
+                nextEl.style.display = 'block';
+                nextEl.className = 'debrief-page active slide-in-left';
+            }
+
+            alertBox.style.height = nextEl.offsetHeight + 'px';
+
+            setTimeout(() => {
+                currentEl.classList.remove('active', 'slide-out-left', 'slide-out-right');
+                currentEl.style.display = 'none';
+                currentPageNum = targetNum;
+            }, 300);
+        }
+
+        function typeReply(text, i = 0) {
+            if (i === 0) typeSnd.play().catch(() => {});
+            if (i < text.length) {
+                userInput.value += text.charAt(i);
+                setTimeout(() => typeReply(text, i + 1), 50);
+            } else {
+                typeSnd.pause(); typeSnd.currentTime = 0;
+                sendBtn.disabled = false;
+                updateStatus("Click arrow to send reply");
+            }
+        }
+
+        function addMsg(t, s) {
+            const b = document.createElement('div');
+            b.className = `bubble ${s}`;
+            b.innerHTML = t;
+            chatBox.appendChild(b);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            if(s === 'cherry') { msgSnd.currentTime = 0; msgSnd.play().catch(() => {}); }
+        }
+
+        function updateStatus(text) {
+            statusLine.classList.remove('status-visible');
+            setTimeout(() => {
+                statusLine.innerText = text;
+                if(text) statusLine.classList.add('status-visible');
+            }, 200);
+        }
+
+        window.onload = () => {
+            document.getElementById('profileName').innerText = playerName;
+            setTimeout(() => {
+                addMsg(`Hi ${playerName}.`, "cherry");
+                setTimeout(() => {
+                    addMsg("You’re friends with Jen… right?", "cherry");
+                    setTimeout(() => typeReply(playerReply), 1000);
+                }, 1000);
+            }, 800);
+        };
+
+        function sendMessage() {
+            addMsg(userInput.value, "user");
+            userInput.value = "";
+            sendBtn.disabled = true;
+            updateStatus("");
+            
+            setTimeout(() => {
+                updateStatus("Cherry is typing...");
+                setTimeout(() => {
+                    updateStatus("");
+                    addMsg('<img id="targetImg" src="jenai.png" alt="Preview Image" onclick="openInspection()">', "cherry");
+                    
+                    setTimeout(() => {
+                        updateStatus("Cherry is typing...");
+                        setTimeout(() => {
+                            updateStatus("");
+                            addMsg("I will send this to the police, unless you transfer me $500.", "cherry");
+                            
+                            setTimeout(() => {
+                                updateStatus("Cherry is typing...");
+                                setTimeout(() => {
+                                    updateStatus("");
+                                    addMsg("You wouldn’t want your best friend getting into trouble, right?", "cherry");
+                                    
+                                    setTimeout(() => {
+                                        const img = document.getElementById('targetImg');
+                                        img.classList.add('active-image');
+                                        updateStatus("Click image to enlarge it to inspect");
+                                    }, 1000);
+                                }, 1000);
+                            }, 800);
+                        }, 1000);
+                    }, 1200);
+                }, 1000);
+            }, 600);
+        }
+
+        function openInspection() {
+            overlay.style.display = 'flex';
+            overlay.offsetHeight;
+            overlay.classList.add('open');
+        }
+
+        function foundError(id, desc) {
+            const hb = document.getElementById(id);
+            if(hb.classList.contains('found')) return;
+            
+            hb.classList.add('found');
+            alert(desc);
+            errorsFound++;
+            counterEl.innerText = `${errorsFound}/3 Inconsistencies found`;
+
+            if(errorsFound === 3) {
+                securedSnd.play().catch(() => {});
+                setTimeout(() => {
+                    overlay.classList.remove('open');
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        gameWindow.classList.add('window-blurred');
+                        document.getElementById('debriefOverlay').style.display = 'flex';
+                        const firstPage = document.getElementById('p1');
+                        alertBox.style.height = firstPage.offsetHeight + 'px';
+                    }, 400);
+                }, 500);
+            }
+        }
+    </script>
+</body>
+</html>
